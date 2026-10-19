@@ -232,3 +232,49 @@ for idx, label in enumerate(category_order):
         top5_display.index = range(1, len(top5_display) + 1)
 
         st.table(top5_display)
+
+# 1. 앱 제목 및 브라우저 탭 설정 (아이콘 포함)
+st.set_page_config(
+    page_title="영화 유형 나누기",
+    page_icon="🎬",
+    layout="wide"
+)
+
+st.title("🎬 영화 유형 나누기")
+
+
+# 2. 데이터 전처리 및 롱런 지수(20 클리핑) 적용
+df['log_first_scrn'] = np.log10(df['first_scrn'].astype(float))
+df['log_total_audi'] = np.log10(df['total_audi'].astype(float))
+df['days_in_top10'] = df['days_in_top10'].astype(float)
+df['long_run_idx'] = (df['total_audi'] / df['first_week_audi']).clip(upper=20.0)
+
+
+# 3. K-Means 난수 고정 및 누적 관객 평균 기준 ㉮·㉯·㉰ 매핑
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+df['cluster_raw'] = kmeans.fit_predict(X_scaled)
+
+# 누적 관객 평균이 큰 순서대로 ㉮, ㉯, ㉰ 부여
+cluster_audi_mean = df.groupby('cluster_raw')['total_audi'].mean().sort_values(ascending=False)
+rank_to_label = {raw_cluster: label for raw_cluster, label in zip(cluster_audi_mean.index, ['㉮', '㉯', '㉰'])}
+df['cluster'] = df['cluster_raw'].map(rank_to_label)
+
+
+# 4. 고른 속성이 3개 미만일 때 3차원 산점도 예외 처리 안내 문구
+if len(selected_feature_labels) < 3:
+    st.info("ℹ️ 고른 속성이 셋보다 적어 3차원 산점도를 그릴 수 없습니다. 속성을 3개 이상 선택해 주세요.")
+
+
+# 5. 원래 단위 기준의 속성 평균 표 생성
+summary_list = []
+for c in ['㉮', '㉯', '㉰']:
+    c_df = df[df['cluster'] == c]
+    summary_list.append({
+        '묶음': c,
+        '편수': len(c_df),
+        '스크린 수 평균': round(c_df['first_scrn'].mean(), 2),
+        '누적 관객 평균': round(c_df['total_audi'].mean(), 2),
+        '10위권 일수 평균': round(c_df['days_in_top10'].mean(), 2),
+        '롱런 지수 평균': round(c_df['long_run_idx'].mean(), 2)
+    })
+st.dataframe(pd.DataFrame(summary_list), use_container_width=True)
