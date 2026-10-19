@@ -233,6 +233,7 @@ for idx, label in enumerate(category_order):
 
         st.table(top5_display)
 
+
 # 1. 앱 제목 및 브라우저 탭 설정 (아이콘 포함)
 st.set_page_config(
     page_title="영화 유형 나누기",
