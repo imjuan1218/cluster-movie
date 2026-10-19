@@ -245,6 +245,21 @@ st.title("🎬 영화 유형 나누기")
 
 
 # 2. 데이터 전처리 및 롱런 지수(20 클리핑) 적용
+
+# 1. 데이터 불러오기
+raw_df = load_data()
+total_raw_count = len(raw_df)
+
+# ---------------- [이 부분 추가/수정] ----------------
+# 필수 속성 열 목록
+required_cols = ['first_scrn', 'total_audi', 'days_in_top10', 'first_week_audi', 'movieNm']
+
+# raw_df에서 결측치 제거 및 first_week_audi > 0 조건으로 df 변수 생성
+df = raw_df.dropna(subset=required_cols).copy()
+df = df[df['first_week_audi'] > 0].copy()
+# ---------------------------------------------------
+
+# 이제 df 변수가 존재하므로 정상 작동합니다.
 df['log_first_scrn'] = np.log10(df['first_scrn'].astype(float))
 df['log_total_audi'] = np.log10(df['total_audi'].astype(float))
 df['days_in_top10'] = df['days_in_top10'].astype(float)
